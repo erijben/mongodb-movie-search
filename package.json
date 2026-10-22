@@ -1,0 +1,21 @@
+{
+  "name": "mongodb-movie-search",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "search": "node search-text.cjs",
+    "similar": "node search-movies.cjs",
+    "embed": "node embed-movies.cjs",
+    "check-connection": "node test-connection.cjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^18.0.8",
+    "mongodb": "^7.7.0"
+  }
+}

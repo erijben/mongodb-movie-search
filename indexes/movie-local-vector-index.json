@@ -1,0 +1,10 @@
+{
+  "fields": [
+    {
+      "type": "vector",
+      "path": "plot_embedding_embeddinggemma",
+      "numDimensions": 768,
+      "similarity": "cosine"
+    }
+  ]
+}
