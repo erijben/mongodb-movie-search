@@ -213,3 +213,52 @@ article p:last-child {
     padding: 16px;
   }
 }
+.assistant-answer {
+  margin-top: 32px;
+  padding: 26px;
+  border: 1px solid #47775e;
+  border-radius: 18px;
+  background: #14271f;
+}
+
+.assistant-answer h2 {
+  margin-top: 0;
+  color: #a8f0c8;
+}
+
+.answer-text {
+  color: #edf1f7;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.assistant-answer summary {
+  margin-top: 20px;
+  color: #a8f0c8;
+  cursor: pointer;
+}
+
+.source-list {
+  display: grid;
+  gap: 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.source-list li {
+  padding-top: 18px;
+  border-top: 1px solid #365244;
+}
+
+.source-list p {
+  color: #bdcfc4;
+  line-height: 1.7;
+}
+
+.assistant-answer small {
+  display: block;
+  margin-top: 24px;
+  color: #bdcfc4;
+  line-height: 1.6;
+}

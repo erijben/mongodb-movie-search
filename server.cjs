@@ -1,5 +1,5 @@
 require("dotenv").config({ quiet: true });
-
+const { generateAnswer } = require("./generate-answer.cjs");
 const express = require("express");
 const { MongoClient } = require("mongodb");
 
@@ -31,7 +31,7 @@ async function main() {
     });
   });
 
-  app.get("/api/search", async (req, res) => {
+app.get(["/api/search", "/api/ask"], async (req, res) => {
     // Vérifier la phrase reçue dans l'URL.
     if (typeof req.query.q !== "string") {
       return res.status(400).json({
@@ -46,7 +46,17 @@ async function main() {
         error: "La recherche doit contenir entre 1 et 500 caractères.",
       });
     }
+const question = req.query.question ?? query;
 
+if (
+  typeof question !== "string" ||
+  question.trim().length === 0 ||
+  question.trim().length > 500
+) {
+  return res.status(400).json({
+    error: "The question must contain 1–500 characters.",
+  });
+}
     try {
       // Générer l'embedding de la phrase.
       const response = await fetch("http://localhost:11434/api/embed", {
@@ -99,11 +109,61 @@ async function main() {
         },
       ]).toArray();
 
-      res.json({
-        query,
-        count: results.length,
-        results,
-      });
+     // La recherche classique reste disponible sans génération.
+if (req.path === "/api/search") {
+  return res.json({
+    query,
+    count: results.length,
+    results,
+  });
+}
+
+// Préparer les sources du RAG.
+const sources = results
+  .filter(
+    (movie) =>
+      typeof movie.title === "string" &&
+      typeof movie.plot === "string" &&
+      movie.plot.trim()
+  )
+  .map((movie, index) => ({
+    id: index + 1,
+    title: movie.title,
+    plot: movie.plot,
+  }));
+
+if (sources.length === 0) {
+  return res.json({
+    question: question.trim(),
+    retrievalQuery: query,
+    answer: "No usable sources were found to answer this question.",
+    sources: [],
+    results,
+  });
+}
+
+const answer = await generateAnswer(question.trim(), sources);
+
+// Vérifier l'existence des références citées.
+const citedIds = [...answer.matchAll(/\[(\d+)\]/g)]
+  .map((match) => Number(match[1]));
+
+const validIds = new Set(sources.map((source) => source.id));
+
+if (
+  citedIds.length === 0 ||
+  citedIds.some((id) => !validIds.has(id))
+) {
+  throw new Error("InvalidGeneratedCitations");
+}
+
+return res.json({
+  question: question.trim(),
+  retrievalQuery: query,
+  answer,
+  sources,
+  results,
+});
     } catch (error) {
       console.error("Échec de recherche :", error.name);
       console.error("Code :", error.code ?? "non disponible");
