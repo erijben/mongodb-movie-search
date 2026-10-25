@@ -55,17 +55,25 @@ function MoviePoster({
 
 function App() {
   const [query, setQuery] = useState('')
+  const [searchFocus, setSearchFocus] = useState('')
   const [movies, setMovies] = useState<Movie[]>([])
   const [answer, setAnswer] = useState('')
   const [sources, setSources] = useState<Source[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [searchedQuery, setSearchedQuery] = useState<string | null>(null)
+  const [usedSearchFocus, setUsedSearchFocus] = useState('')
 
   async function searchMovies() {
     const text = query.trim()
+    const retrievalQuery = searchFocus.trim() || text
 
     if (!text || loading) return
+
+    if (text.length > 500 || retrievalQuery.length > 500) {
+      setError('Each field must contain at most 500 characters.')
+      return
+    }
 
     setLoading(true)
     setError('')
@@ -73,16 +81,22 @@ function App() {
     setAnswer('')
     setSources([])
     setSearchedQuery(null)
+    setUsedSearchFocus('')
 
     try {
+      const params = new URLSearchParams({
+        q: retrievalQuery,
+        question: text,
+      })
+
       const response = await fetch(
-        `/api/ask?q=${encodeURIComponent(text)}`,
+        `/api/ask?${params.toString()}`,
       )
 
       if (!response.ok) {
         throw new Error(
           response.status === 400
-            ? 'Please enter a question between 1 and 500 characters.'
+            ? 'Please enter a question between 1 and 500 characters. Search focus must not exceed 500 characters.'
             : 'Recommendations are currently unavailable. Please try again.',
         )
       }
@@ -93,7 +107,8 @@ function App() {
         !Array.isArray(data.results) ||
         !Array.isArray(data.sources) ||
         typeof data.answer !== 'string' ||
-        typeof data.question !== 'string'
+        typeof data.question !== 'string' ||
+        typeof data.retrievalQuery !== 'string'
       ) {
         throw new Error('The server returned an invalid response.')
       }
@@ -102,6 +117,7 @@ function App() {
       setAnswer(data.answer)
       setSources(data.sources)
       setSearchedQuery(data.question)
+      setUsedSearchFocus(data.retrievalQuery)
     } catch (err) {
       setError(
         err instanceof Error
@@ -143,6 +159,29 @@ function App() {
           required
           disabled={loading}
         />
+
+        <label htmlFor="search-focus">
+          Search focus (optional)
+        </label>
+
+        <input
+          id="search-focus"
+          type="text"
+          value={searchFocus}
+          onChange={(event) => setSearchFocus(event.target.value)}
+          placeholder="Pirates searching for hidden treasure"
+          aria-describedby="search-focus-help"
+          maxLength={500}
+          disabled={loading}
+        />
+
+        <p
+          id="search-focus-help"
+          style={{ gridColumn: '1 / -1', margin: 0 }}
+        >
+          Optionally describe only the movie story you want.
+          Leave blank to search using your full question.
+        </p>
 
         <button
           type="submit"
@@ -210,7 +249,11 @@ function App() {
                   } found`}
             </h2>
 
-            <p>Results for “{searchedQuery}”</p>
+            <p>Question: “{searchedQuery}”</p>
+
+            {usedSearchFocus !== searchedQuery && (
+              <p>Search focus: “{usedSearchFocus}”</p>
+            )}
           </>
         )}
 
